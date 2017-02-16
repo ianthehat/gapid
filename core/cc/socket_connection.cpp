@@ -103,7 +103,7 @@ int accept(int sockfd, int timeoutMs) {
         FD_ZERO(&set);
         FD_SET(sockfd, &set);
 
-        timeval timeout;
+        TIMEVAL timeout;
         timeout.tv_sec = timeoutMs / 1000;
         timeout.tv_usec = (timeoutMs - timeout.tv_sec * 1000) * 1000;
 
