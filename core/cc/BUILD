@@ -32,13 +32,13 @@ cc_library(
     deps = [
         "@cityhash//:cityhash",
     ] + select({
-        "//bazel:windows": ["@windows_sdk//:includes"],
+        "//tools/build:windows": ["@windows_sdk//:includes"],
         "//conditions:default": [],
     }),
     linkopts = select({
-        "//bazel:linux": [],
-        "//bazel:darwin": [],
-        "//bazel:windows": ["-lws2_32"],
+        "//tools/build:linux": [],
+        "//tools/build:darwin": [],
+        "//tools/build:windows": ["-lws2_32"],
         "//conditions:default": [],
     }),
 )

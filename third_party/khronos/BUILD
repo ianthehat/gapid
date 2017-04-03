@@ -31,7 +31,7 @@ cc_library(
         "glslang/OGLCompilersDLL",
     ],
     deps = select({
-        "//bazel:windows": ["@windows_sdk//:includes"],
+        "//tools/build:windows": ["@windows_sdk//:includes"],
         "//conditions:default": [],
     }),
     linkopts = select({

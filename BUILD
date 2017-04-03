@@ -37,7 +37,7 @@ filegroup(
         "//:install-properties",
         "//:install-strings",
     ] + select({ # TODO: temporary until android rules work on windows
-        "//bazel:windows": [],
+        "//tools/build:windows": [],
         "//conditions:default": ["//:install-gapid.apk"],
     }),
     tags = ["manual"],
