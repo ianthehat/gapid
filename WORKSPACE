@@ -46,6 +46,7 @@ load("@//tools/build:rules.bzl",
     "windows_sdk",
     "android_auto_ndk",
 )
+load("@//tools/build/rules/proto:ptypes.bzl", "ptypes_repository")
 
 #########################################################
 # Run our workspace preparation rules
@@ -53,6 +54,10 @@ load("@//tools/build:rules.bzl",
 go_repositories()
 appengine_repositories()
 cc_configure()
+
+ptypes_repository(
+    name = "ptypes"
+)
 
 windows_sdk(
     name="windows_sdk",
@@ -173,11 +178,6 @@ github_go_repository(
     project = "protobuf",
     commit = "8ee79997227bf9b34611aee7946ae64735e6fd93",
     importpath = "github.com/golang/protobuf",
-)
-
-empty_repository(
-    name = "ptypes",
-    build_file = "//tools/build/third_party:ptypes.BUILD",
 )
 
 github_go_repository(

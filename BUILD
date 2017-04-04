@@ -125,9 +125,11 @@ copy(
     visibility = ["//visibility:private"],
 )
 
-proto_library(
+# Alias the ptypes in here
+alias(
     name = "ptypes",
-    srcs = glob(["google/protobuf/*.proto"]),
+    actual = "@ptypes//:ptypes",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
