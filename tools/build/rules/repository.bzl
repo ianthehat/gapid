@@ -4,6 +4,11 @@ _BUILD_FILE_ATTRS = {
       single_file = True,
   ),
   "build_file_content": attr.string(),
+  "workspace_file": attr.label(
+      allow_files = True,
+      single_file = True,
+  ),
+  "workspace_file_content": attr.string(),
 }
 
 def _add_build_file(ctx):
@@ -15,9 +20,21 @@ def _add_build_file(ctx):
       return True
     return False
 
+
+def _add_workspace_file(ctx):
+    if ctx.attr.workspace_file:
+      ctx.symlink(ctx.attr.workspace_file, "WORKSPACE")
+      return True
+    if ctx.attr.workspace_file_content:
+      ctx.file("WORKSPACE", ctx.attr.workspace_file_content)
+      return True
+    return False
+
 def _empty_repository_impl(ctx):
   if not _add_build_file(ctx):
     fail("You must specify either build_file or build_file_content'")
+  if not _add_workspace_file(ctx):
+    fail("You must specify either workspace_file or workspace_file_content'")
 
 empty_repository = repository_rule(
     implementation = _empty_repository_impl,

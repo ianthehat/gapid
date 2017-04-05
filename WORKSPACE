@@ -41,7 +41,12 @@ github_repository(
 load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 load("@io_bazel_rules_appengine//appengine:appengine.bzl", "appengine_repositories")
 load("@bazel_tools//tools/cpp:cc_configure.bzl", "cc_configure")
-load("@//tools/build:rules.bzl", "empty_repository", "github_go_repository", "windows_sdk")
+load("@//tools/build:rules.bzl", 
+    "empty_repository", 
+    "github_go_repository", 
+    "windows_sdk",
+    "android_auto_ndk",
+)
 
 #########################################################
 # Run our workspace preparation rules
@@ -59,7 +64,7 @@ android_sdk_repository(
     api_level=21,
 )
 
-android_ndk_repository(
+android_auto_ndk(
     name="androidndk",
     api_level=21,
 )

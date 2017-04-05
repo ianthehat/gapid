@@ -1,5 +1,5 @@
 load("//tools/build/codergen:rules.bzl", "codergen")
-load("//tools/build/rules:android.bzl", "android_native")
+load("//tools/build/rules:android.bzl", "android_native", "android_auto_ndk")
 load("//tools/build/rules:annotate.bzl", "snippets")
 load("//tools/build/rules:apic.bzl", "apic")
 load("//tools/build/rules:cc.bzl", "cc_copts", "cc_defines")
