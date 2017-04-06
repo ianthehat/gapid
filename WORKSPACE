@@ -11,7 +11,6 @@ github_repository(
     project = "rules_go",
     branch = "master",
     commit = "5a8055945bda32bf29d5a66a5f90c058646dbf84", # Comment to use the master branch of this repository
-    # path = "../rules_go", # Uncomment to use a local copy of this repository
 )
 
 github_repository(
@@ -66,7 +65,7 @@ android_sdk_repository(
 
 android_auto_ndk(
     name="androidndk",
-    ndk_version="13b",
+    ndk_version="14b",
     api_level=21,
 )
 

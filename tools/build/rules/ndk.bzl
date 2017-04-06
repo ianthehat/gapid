@@ -77,7 +77,7 @@ def merge(*values):
 
 
 _TOOLCHAIN_IDENTIFIER = '{base}-{host}-gnu-libstdcpp'
-_TOOLCHAIN_PATH = "ndk/toolchains/{base}-{host}-{system}-{version}"
+_TOOLCHAIN_PATH = "ndk/toolchains/{toolchain}-{version}"
 _PREBUILT = _TOOLCHAIN_PATH+"/prebuilt/{host}-x86_64"
 _FULL_PREBUILT = "external/androidndk/" + _PREBUILT
 _STL_PATH = "ndk/sources/cxx-stl/gnu-libstdc++/{version}"
@@ -102,6 +102,8 @@ _CLANG_BASE = {
     "compiler_flag": [
       "-gcc-toolchain", _FULL_PREBUILT,
       "-fpic",
+      "-D__ANDROID__",
+      "-U__APPLE__",
       "-ffunction-sections",
       "-funwind-tables",
       "-fstack-protector-strong",
@@ -163,6 +165,7 @@ _ARM_BASE = {
   "base":"arm",
   "system": "androideabi",
   "abi_version": "armeabi",
+  "toolchain": "arm-linux-androideabi",
   "settings": {
     "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-arm",
   },
@@ -173,6 +176,7 @@ _ARM64_BASE = {
   "base":"aarch64",
   "system": "android",
   "abi_version": "aarch64",
+  "toolchain": "aarch64-linux-androideabi",
   "settings": {
     "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-arm64",
   },
@@ -183,6 +187,7 @@ _X86_BASE = {
   "base":"x86",
   "system": "android",
   "abi_version": "x86",
+  "toolchain": "x86",
   "settings": {
     "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-x86",
   },
@@ -193,53 +198,62 @@ _X86_64_BASE = {
   "base":"x86_64",
   "system": "android",
   "abi_version": "x86_64",
+  "toolchain": "x86_64",
   "settings": {
     "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-x86_64",
   },
 }
 
 _CLANG_ARMEABI = merge(_CLANG_BASE, _ARM_BASE, {
-  "compiler_flag": [
-    "-target", "armv7-none-{host}-{system}",
-    "-march=armv7-a",
-  ],
-  "linker_flag": [
-    "-target", "armv7-none-{host}-{system}",
-    "-march=armv7-a",
-  ],
+  "settings": {
+    "compiler_flag": [
+      "-target", "armv7-none-linux-{system}",
+      "-march=armv7-a",
+    ],
+    "linker_flag": [
+      "-target", "armv7-none-linux-{system}",
+      "-march=armv7-a",
+    ],
+  }
 })
 
 _CLANG_AARCH64 = merge(_CLANG_BASE, _ARM64_BASE, {
-  "compiler_flag": [
-    "-target", "aarch64-none-{host}-{system}",
-    "-march=aarch64",
-  ],
-  "linker_flag": [
-    "-target", "aarch64-none-{host}-{system}",
-    "-march=aarch64",
-  ],
+  "settings": {
+    "compiler_flag": [
+      "-target", "aarch64-none-linux-{system}",
+      "-march=aarch64",
+    ],
+    "linker_flag": [
+      "-target", "aarch64-none-linux-{system}",
+      "-march=aarch64",
+    ],
+  }
 })
 
 _CLANG_X86 = merge(_CLANG_BASE, _X86_BASE, {
-  "compiler_flag": [
-    "-target", "i686-none-{host}-{system}",
-    "-march=i686",
-  ],
-  "linker_flag": [
-    "-target", "i686-none-{host}-{system}",
-    "-march=i686",
-  ],
+  "settings": {
+    "compiler_flag": [
+      "-target", "i686-none-linux-{system}",
+      "-march=i686",
+    ],
+    "linker_flag": [
+      "-target", "i686-none-linux-{system}",
+      "-march=i686",
+    ],
+  }
 })
 
 _CLANG_X86_64 = merge(_CLANG_BASE, _X86_64_BASE, {
-  "compiler_flag": [
-    "-target", "x86_64-none-{host}-{system}",
-    "-march=x86_64",
-  ],
-  "linker_flag": [
-    "-target", "x86_64-none-{host}-{system}",
-    "-march=x86_64",
-  ],
+  "settings": {
+    "compiler_flag": [
+      "-target", "x86_64-none-linux-{system}",
+      "-march=x86_64",
+    ],
+    "linker_flag": [
+      "-target", "x86_64-none-linux-{system}",
+      "-march=x86_64",
+    ],
+  }
 })
 
 _ANDROID_COMPILER_LIST = [
