@@ -44,7 +44,7 @@ def _ndk_repository_impl(ctx):
     stripPrefix = ndk,
     output = "ndk"
   )
-  ctx.file("BUILD.bazel", create_crosstool(host))
+  ctx.file("BUILD.bazel", create_crosstool(host, ctx.attr.api_level))
 
 _ndk_repository = repository_rule(
     _ndk_repository_impl,
@@ -70,16 +70,16 @@ _WORKSPACE_FILE =  '''
 workspace(name = "androidndk")
 '''
 
-def merge_dicts(*values):
+def merge_child(*values):
   result = {}
   for m in values:
     for k, v in m.items():
       if k in result:
-        v = merge(result[k], v)
-      else:
-        result[k] = v
+        to = result[k]
+        if type(to) == type([]):
+          v = merge_lists(to, v)
+      result[k] = v
   return result
-
 
 def merge_lists(*values):
   result = []
@@ -88,17 +88,25 @@ def merge_lists(*values):
   return result
 
 def merge(*values):
-  if len(values) == 0:
-    return None
-  if type(values[0]) == type({}):
-    return merge_dicts(*values)
-  if type(values[0]) == type([]):
-    return merge_lists(*values)
-  return values[-1]
+  result = {}
+  for m in values:
+    for k, v in m.items():
+      if k in result:
+        to = result[k]
+        if type(to) == type({}):
+          v = merge_child(to, v)
+        elif type(to) == type([]):
+          v = merge_lists(to, v)
+      result[k] = v
+  return result
+
 
 
 _TOOLCHAIN_IDENTIFIER = '{base}-{host}-gnu-libstdcpp'
-_PREBUILT = "external/androidndk/ndk/toolchains/{base}-{host}-{system}-{version}/prebuilt/{host}-x86_64"
+_PREBUILT = "ndk/toolchains/{base}-{host}-{system}-{version}/prebuilt/{host}-x86_64"
+_FULL_PREBUILT = "external/androidndk/" + _PREBUILT
+_STL_PATH = "ndk/sources/cxx-stl/gnu-libstdc++/{version}"
+_FULL_STL_PATH = "external/androidndk/" + _STL_PATH
 
 _CLANG_BASE = {
   "compiler": "clang3.8",
@@ -116,7 +124,7 @@ _CLANG_BASE = {
     {"name":"gcc", "path": "ndk/toolchains/llvm/prebuilt/{host}-x86_64/bin/clang"},
   ],
   "compiler_flag": [
-    "-gcc-toolchain", _PREBUILT,
+    "-gcc-toolchain", _FULL_PREBUILT,
     "-fpic",
     "-ffunction-sections",
     "-funwind-tables",
@@ -124,21 +132,17 @@ _CLANG_BASE = {
     "-Wno-invalid-command-line-argument",
     "-Wno-unused-command-line-argument",
     "-no-canonical-prefixes",
-    "-fno-canonical-system-headers",
+    #"-fno-canonical-system-headers",
     "-fno-integrated-as",
-    "-target", "{arch}-none-{host}-{system}",
-    "-march={arch}",
-    "-mtune=xscale",
-    "-msoft-float",
+    #"-mtune=xscale",
+    #"-msoft-float",
   ],
   "linker_flag": [
-    "-gcc-toolchain", _PREBUILT,
+    "-gcc-toolchain", _FULL_PREBUILT,
     "-no-canonical-prefixes",
-    "-target", "{arch}-none-{host}-{system}",
   ],
-  "compilation_mode_flags":[
-    {
-      "mode": "OPT",
+  "compilation_mode_flags":{
+    "OPT":{
       "compiler_flag": [
         "-O2",
         "-g",
@@ -147,8 +151,7 @@ _CLANG_BASE = {
         "-fstrict-aliasing",
       ],
     },
-    {
-      "mode": "DBG",
+    "DBG": {
       "compiler_flag": [
         "-O0",
         "-g",
@@ -157,71 +160,108 @@ _CLANG_BASE = {
         "-fno-strict-aliasing",
       ],
     },
-  ],
+  },
   "cxx_builtin_include_directory": [
-    _PREBUILT+"/lib/gcc/{base}-{host}-{system}/{version}/include",
-    _PREBUILT+"lib/gcc/{base}-{host}-{system}/{version}/include-fixed",
+    _FULL_PREBUILT+"/lib/gcc/{base}-{host}-{system}/{version}/include",
+    _FULL_PREBUILT+"lib/gcc/{base}-{host}-{system}/{version}/include-fixed",
     "%sysroot%/usr/include",
   ],
-  "builtin_sysroot": "external/androidndk/ndk/platforms/android-21/arch-arm",
   "unfiltered_cxx_flag": [
-    "-isystem", _PREBUILT+"lib/gcc/{base}-{host}-{system}/{version}/include",
-    "-isystem", _PREBUILT+"lib/gcc/{base}-{host}-{system}/{version}/include-fixed",
-    "-isystem", "external/androidndk/ndk/sources/cxx-stl/gnu-libstdc++/{version}/include",
-    "-isystem", "external/androidndk/ndk/sources/cxx-stl/gnu-libstdc++/{version}/libs/{cpu}/include",
-    "-isystem", "external/androidndk/ndk/sources/cxx-stl/gnu-libstdc++/{version}/include/backward",
+    "-isystem", _FULL_PREBUILT+"lib/gcc/{base}-{host}-{system}/{version}/include",
+    "-isystem", _FULL_PREBUILT+"lib/gcc/{base}-{host}-{system}/{version}/include-fixed",
+    "-isystem", _FULL_STL_PATH+"/include",
+    "-isystem", _FULL_STL_PATH+"/libs/{cpu}/include",
+    "-isystem", _FULL_STL_PATH+"/include/backward",
   ],
-  "supports_embedded_runtimes": "true",
-  "static_runtimes_filegroup": "gnu-libstdcpp-{version}-{cpu}-static-runtime-libraries",
-  "dynamic_runtimes_filegroup": "gnu-libstdcpp-{version}-{cpu}-dynamic-runtime-libraries",
+  "settings": {
+    "supports_embedded_runtimes": True,
+    "static_runtimes_filegroup": "gnu-libstdcpp-{version}-{cpu}-static-runtime-libraries",
+    "dynamic_runtimes_filegroup": "gnu-libstdcpp-{version}-{cpu}-dynamic-runtime-libraries",
+  }
 }
 
 _ARM_BASE = {
   "cpu":"armeabi-v7a",
   "base":"arm",
   "system": "androideabi",
-  "target": "armeabi",
-  "arch": "armv5te",
+  "abi_version": "armeabi",
+  "settings": {
+    "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-arm",
+  },
 }
 
 _ARM64_BASE = {
   "cpu":"arm64-v8a",
   "base":"aarch64",
   "system": "android",
-  "target": "aarch64",
-  "arch": "aarch64",
+  "abi_version": "aarch64",
+  "settings": {
+    "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-arm64",
+  },
 }
 
 _X86_BASE = {
   "cpu":"x86",
   "base":"x86",
   "system": "android",
-  "target": "x86",
-  "arch": "x86",
+  "abi_version": "x86",
+  "settings": {
+    "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-x86",
+  },
 }
 
 _X86_64_BASE = {
   "cpu":"x86_64",
   "base":"x86_64",
   "system": "android",
-  "target": "x86_64",
-  "arch": "x86_64",
+  "abi_version": "x86_64",
+  "settings": {
+    "builtin_sysroot": "external/androidndk/ndk/platforms/android-{api_level}/arch-x86_64",
+  },
 }
 
 _CLANG_ARMEABI = merge(_CLANG_BASE, _ARM_BASE, {
-
+  "compiler_flag": [
+    "-target", "armv7-none-{host}-{system}",
+    "-march=armv7-a",
+  ],
+  "linker_flag": [
+    "-target", "armv7-none-{host}-{system}",
+    "-march=armv7-a",
+  ],
 })
 
 _CLANG_AARCH64 = merge(_CLANG_BASE, _ARM64_BASE, {
-
+  "compiler_flag": [
+    "-target", "aarch64-none-{host}-{system}",
+    "-march=aarch64",
+  ],
+  "linker_flag": [
+    "-target", "aarch64-none-{host}-{system}",
+    "-march=aarch64",
+  ],
 })
 
 _CLANG_X86 = merge(_CLANG_BASE, _X86_BASE, {
-
+  "compiler_flag": [
+    "-target", "i686-none-{host}-{system}",
+    "-march=i686",
+  ],
+  "linker_flag": [
+    "-target", "i686-none-{host}-{system}",
+    "-march=i686",
+  ],
 })
 
 _CLANG_X86_64 = merge(_CLANG_BASE, _X86_64_BASE, {
-
+  "compiler_flag": [
+    "-target", "x86_64-none-{host}-{system}",
+    "-march=x86_64",
+  ],
+  "linker_flag": [
+    "-target", "x86_64-none-{host}-{system}",
+    "-march=x86_64",
+  ],
 })
 
 _ANDROID_COMPILER_LIST = [
@@ -231,8 +271,11 @@ _ANDROID_COMPILER_LIST = [
   _CLANG_X86_64,
 ]
 
-def create_crosstool(host):
-  compilers = [c + {"host":host} for c in _ANDROID_COMPILER_LIST]
+def create_crosstool(host, api_level):
+  compilers = [c + {
+    "host":host,
+    "api_level":api_level,
+  } for c in _ANDROID_COMPILER_LIST]
   result = '''
 package(default_visibility = ["//visibility:public"])
 
@@ -275,7 +318,7 @@ default_target_cpu: "armeabi-v7a"
   target_cpu: "{cpu}"
   target_libc: "local"
   compiler: "{compiler}"
-  abi_version: "{target}"
+  abi_version: "{abi_version}"
   abi_libc_version: "local"
 ''').format(**c)
     for tool in c["tools"]:
@@ -284,24 +327,22 @@ default_target_cpu: "armeabi-v7a"
       result += '  compiler_flag: "' + flag.format(**c) + '"\n'
     for flag in c["linker_flag"]:
       result += '  linker_flag: "' + flag.format(**c) + '"\n'
-    for mode in c["compilation_mode_flags"]:
+    for mode, values in c["compilation_mode_flags"].items():
       result += '  compilation_mode_flags {\n'
-      result += '    mode: ' + mode["mode"] + '\n'
-      for flag in mode["compiler_flag"]:
+      result += '    mode: ' + mode + '\n'
+      for flag in values["compiler_flag"]:
         result += '    compiler_flag: "' + flag.format(**c) + '"\n'
       result += '  }\n'
     for d in c["cxx_builtin_include_directory"]:
       result += '  cxx_builtin_include_directory: "' + d.format(**c) + '"\n'
-    result += '  builtin_sysroot: "' + flag.format(c["builtin_sysroot"]) + '"\n'
     for d in c["unfiltered_cxx_flag"]:
       result += '  unfiltered_cxx_flag: "' + d.format(**c) + '"\n'
-    result += '  supports_embedded_runtimes: ' + c["supports_embedded_runtimes"] + '\n'
-    result += '  static_runtimes_filegroup: "' + c["static_runtimes_filegroup"].format(**c) + '"\n'
-    result += '  dynamic_runtimes_filegroup: "' + c["dynamic_runtimes_filegroup"].format(**c) + '"\n'
+    for name, value in c["settings"].items():
+      if type(value) == type(""):
+        value = '"' + value.format(**c) + '"'
+      result += '  {}: {}\n'.format(name,value)
     result += '}\n'
   result += '\n""")\n'
-
-
   for c in compilers:
     result += ('# ' + _TOOLCHAIN_IDENTIFIER + '''
 
@@ -327,32 +368,32 @@ filegroup(
     ]),
     output_licenses = ["unencumbered"],
 )
-
+' +  + '
 filegroup(
     name = "'''+_TOOLCHAIN_IDENTIFIER+'''-all_files",
     srcs = [
         ":'''+_TOOLCHAIN_IDENTIFIER+'''-toolchain_files",
     ] + glob([
-        "ndk/platforms/android-21/arch-arm/**/*",
+        "ndk/platforms/android-{api_level}/arch-{base}/**/*",
         "'''+_PREBUILT+'''lib/gcc/{base}-{host}-{system}/{version}/include/**/*",
         "'''+_PREBUILT+'''/lib/gcc/{base}-{host}-{system}/{version}/include-fixed/**/*",
-        "ndk/sources/cxx-stl/gnu-libstdc++/{version}/include/**/*",
-        "ndk/sources/cxx-stl/gnu-libstdc++/{version}/libs/{cpu}/include/**/*",
-        "ndk/sources/cxx-stl/gnu-libstdc++/{version}/include/backward/**/*",
+        "'''+_STL_PATH+'''/include/**/*",
+        "'''+_STL_PATH+'''/libs/{cpu}/include/**/*",
+        "'''+_STL_PATH+'''/include/backward/**/*",
     ]),
 )
 ''').format(**c)
 
   for _, c in default_compiler.items():
-    result += '''
+    result += ('''
 filegroup(
     name = "gnu-libstdcpp-{version}-{cpu}-dynamic-runtime-libraries",
-    srcs = glob(["ndk/sources/cxx-stl/gnu-libstdc++/{version}/libs/{cpu}/*.so"]),
+    srcs = glob(["'''+_STL_PATH+'''/libs/{cpu}/*.so"]),
 )
 
 filegroup(
     name = "gnu-libstdcpp-{version}-{cpu}-static-runtime-libraries",
-    srcs = glob(["ndk/sources/cxx-stl/gnu-libstdc++/{version}/libs/{cpu}/*.a"]),
+    srcs = glob(["'''+_STL_PATH+'''/libs/{cpu}/*.a"]),
 )
-'''.format(**c)
+''').format(**c)
   return result
