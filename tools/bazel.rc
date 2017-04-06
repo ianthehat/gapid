@@ -3,9 +3,6 @@ build --verbose_failures
 test --test_output=errors
 query --nohost_deps --noimplicit_deps
 
-# Adding in c11 compiling, this really should be done in the android toolchains
-build --cxxopt="-std=c++11"
-
 # Options to work around bazel limitations
 build --proto_compiler=@com_google_protobuf//:protoc
 build --proto_toolchain_for_cc=@com_google_protobuf//:cc_toolchain

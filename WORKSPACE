@@ -66,6 +66,7 @@ android_sdk_repository(
 
 android_auto_ndk(
     name="androidndk",
+    ndk_version="13b",
     api_level=21,
 )
 
